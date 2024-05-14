@@ -1,5 +1,4 @@
 streamlit
-psycopg2-binary
+requests
+google.generativeai
 python-dotenv
-pydantic
-datetime
