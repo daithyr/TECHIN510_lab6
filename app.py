@@ -25,6 +25,8 @@ with c1:
 with c2:
     city = st.text_input("Enter the city")
 
+additional_info = st.text_area("Additional Information (optional)", "")
+
 reply = None
 if st.button("Get Hiking Trails Recommendations", use_container_width=True):
     prompt = f"""
@@ -34,6 +36,8 @@ if st.button("Get Hiking Trails Recommendations", use_container_width=True):
 
     Season: {season}
     City: {city}
+
+    Additional Information: {additional_info}
 
     Give the response in the following format:
     <response>
@@ -54,15 +58,31 @@ if st.button("Get Hiking Trails Recommendations", use_container_width=True):
        Difficulty:
        Notable Features:
     </response>
+
+    After providing the recommendations, generate a personalized message for the user based on the additional information provided.
     """
     reply = generate_content(prompt)
 
 if reply:
+    response_parts = reply.split("</response>")
+    recommendations = response_parts[0].strip("<response>").strip()
+    personalized_message = response_parts[1].strip() if len(response_parts) > 1 else ""
+
     st.write("Here are the top 5 hiking trails recommendations:")
-    response_text = reply.strip("<response>").strip("</response>").strip()
-    for trail_info in response_text.split("\n\n"):
+    for trail_info in recommendations.split("\n\n"):
         with st.expander(trail_info.split("\n")[0].split(":")[1].strip()):
             st.write("\n".join(trail_info.split("\n")[1:]))
+
+    if personalized_message:
+        st.write("\nPersonalized Message:")
+        st.write(personalized_message)
+
+    st.write("\nHere are some additional resources for your hiking adventure:")
+    resources_prompt = f"""
+    Provide 3 relevant resources (websites, articles, or books) for hiking in {city} during {season}.
+    """
+    resources_reply = generate_content(resources_prompt)
+    st.write(resources_reply)
 # import os
 # import google.generativeai as genai
 # from dotenv import load_dotenv
