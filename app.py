@@ -1,38 +1,44 @@
-# Import necessary libraries
-import openai
 import os
+import google.generativeai as genai
 from dotenv import load_dotenv
+import streamlit as st
+import time
 
-# Load environment variables
 load_dotenv()
 
-# Set up OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel('gemini-pro')
 
-def send_prompt(prompt_text):
-    try:
-        # Sending a request to the OpenAI API
-        response = openai.Completion.create(
-            engine="text-davinci-002",  # You can choose different models
-            prompt=prompt_text,
-            max_tokens=150
-        )
-        return response.choices[0].text.strip()
-    except Exception as e:
-        return str(e)
+prompt_template = """
+You are an expert in recommending hiking trails based on the season and city.
+Provide the top 5 hiking trails for the given season and city.
+Include a brief description of each trail, its difficulty level, and any notable features.
 
-# Direct Prompt
-direct_prompt = "Explain the theory of relativity."
-print("Direct Prompt Response:", send_prompt(direct_prompt))
+Season: {season}
+City: {city}
+"""
 
-# Few-shot Learning Example
-few_shot_prompt = """Q: What is photosynthesis?
-A: Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water. Photosynthesis in plants generally involves the green pigment chlorophyll and generates oxygen as a byproduct.
+def generate_content(season, city):
+    response = model.generate_content(prompt_template.format(season=season, city=city))
+    return response.text
 
-Q: What is quantum entanglement?
-A: """
-print("Few-shot Prompt Response:", send_prompt(few_shot_prompt))
+def stream_output(reply):
+    for word in reply.split(" "):
+        yield word + " "
+        time.sleep(0.02)
 
-# Zero-shot Technique
-zero_shot_prompt = "Write a poem about the ocean."
-print("Zero-shot Prompt Response:", send_prompt(zero_shot_prompt))
+st.title("Top 5 Hiking Trails Recommendation")
+
+c1, c2 = st.columns(2)
+
+with c1:
+    season = st.selectbox("Select the season", ["Spring", "Summer", "Fall", "Winter"])
+
+with c2:
+    city = st.text_input("Enter the city")
+
+reply = None
+
+if st.button("Get Hiking Trails Recommendations", use_container_width=True):
+    reply = generate_content(season, city)
+    st.write(reply)
